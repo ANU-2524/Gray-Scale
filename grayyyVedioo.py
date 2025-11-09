@@ -27,7 +27,7 @@ while True :
         break 
     # cv2.cvtColor() function used to convert color space of the image !
     grayyy = cv2.cvtColor(frame , cv2.COLOR_BGR2GRAY)
-    cv2.imshow("Grayyy Video" , grayyy)
+    cv2.imshow("Grayyy Video" , grayyy )
     key = cv2.waitKey(1) & 0xFF
     if (key == ord('q')) :
         print("Camera closed !")
