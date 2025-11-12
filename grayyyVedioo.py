@@ -34,7 +34,7 @@ while True :
         exit()
     if (key == ord('s')) :
         cv2.imwrite("Grayyy_Video_Frame.png" , grayyy)
-        print("Grayyy Video Frame Saved !")
+        print("Grayyy Video Frame Saved !!!")
     
         
 cappp.release() 
