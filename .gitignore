@@ -1,4 +1,16 @@
+# Environments
 .env
-grayy_imagee.png
+.venv
+venv/
+env/
+__pycache__/
+*.py[cod]
 
+# Captured Images
+grayy_imagee.png
 Grayyy_Video_Frame.png
+capture_*.png
+
+# Recorded Videos
+*.avi
+*.mp4

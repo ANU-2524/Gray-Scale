@@ -1,8 +1,42 @@
-# Gray-Scale
-`Run command - python grayyyVedio.py `
+# GrayVedio
 
-`--Code line 4 to 6 -- `
-with a delay of few second , it will capture your photo with grayscale filter and saved that image named grayy_imagee.png (file in .gitignore) !!!
+A simple real-time grayscale video processing tool using OpenCV.
 
-`--Code line 15 to 41 --`
-After running the file , it opens the camera with already gray scale effect. By pressing 's' key , image get clicked and  saved (file in .gitignore) and by pressing 'q' , it close your camera.
+## Features
+- Real-time webcam feed in grayscale.
+- Capture and save frames as images with timestamped filenames.
+- Record the grayscale stream to a video file.
+- Command-line interface for easy configuration.
+
+## Requirements
+- Python 3.x
+- OpenCV (`opencv-python`)
+
+Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+## Usage
+Run the script with default settings:
+```bash
+python grayyyVedioo.py
+```
+
+### Options
+- `--camera`: Specify the camera index (default is 0).
+- `--output`: Path to save the recorded grayscale video (e.g., `output.avi`).
+
+Example - Record to a file:
+```bash
+python grayyyVedioo.py --output output.avi
+```
+
+### Controls
+While the application is running, focus on the video window:
+- Press **'s'** to save the current frame as a `.png` file.
+- Press **'q'** to quit the application.
+
+## License
+MIT
+

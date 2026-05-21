@@ -1,41 +1,82 @@
-import cv2 
-# Code to capture only one frame from webcam with having grey scale effect !!
+import cv2
+import argparse
+import datetime
 
-# capp = cv2.VideoCapture(0)
-# read , frame = capp.read()
-# grayy = cv2.cvtColor(frame , cv2.COLOR_BGR2GRAY)
-# cv2.imwrite("grayy_imagee.png" , grayy)
-# cv2.imshow("Grayy Imagee" , grayy) # clicked image show on screen 
-# cv2.waitKey(0) # waits until any key get pressed ! 
-# cv2.destroyAllWindows()
-# capp.release()
-
-# ---*--*--*--- #
-
-# To make connection with webcam and 0 for the choice of camera.
-cappp = cv2.VideoCapture(0)
-
-# Checking , webcam opened or not. In case of error , it get exit !
-if not cappp.isOpened() :
-    print("Error Occured : Camera is not accessible !")
-    exit() 
+def main():
+    """
+    Main function to capture video from webcam, convert it to grayscale,
+    and provide options to save frames or record the stream.
+    """
+    parser = argparse.ArgumentParser(description="GrayVedio: Real-time Grayscale Video Capture and Processing")
+    parser.add_argument("--camera", type=int, default=0, help="Camera index (default: 0)")
+    parser.add_argument("--output", type=str, help="Path to save the output video (e.g., output.avi)")
     
-while True :
-    read , frame = cappp.read() 
-    if not read :
-        print("Error Occured : Failed to read frame !")
-        break 
-    # cv2.cvtColor() function used to convert color space of the image !
-    grayyy = cv2.cvtColor(frame , cv2.COLOR_BGR2GRAY)
-    cv2.imshow("Grayyy Video" , grayyy )
-    key = cv2.waitKey(1) & 0xFF
-    if (key == ord('q')) :
-        print("Camera closed !")
-        exit()
-    if (key == ord('s')) :
-        cv2.imwrite("Grayyy_Video_Frame.png" , grayyy)
-        print("Grayyy Video Frame Saved !!!")
-    
-        
-cappp.release() 
-cappp.destroyAllWindows()
+    args = parser.parse_args()
+
+    # Initialize video capture
+    cap = cv2.VideoCapture(args.camera)
+
+    if not cap.isOpened():
+        print(f"Error: Camera index {args.camera} is not accessible!")
+        return
+
+    # Video writer setup if output path is provided
+    out = None
+    if args.output:
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        # Get frame dimensions
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        out = cv2.VideoWriter(args.output, fourcc, 20.0, (width, height), isColor=False)
+        print(f"Recording video to: {args.output}")
+
+    print("\n--- GrayVedio Controls ---")
+    print("  's' : Save current frame as image")
+    print("  'q' : Quit application")
+    print("---------------------------\n")
+
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                print("Error: Failed to read frame from camera!")
+                break
+
+            # Convert to grayscale
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            # Write frame to video if recording
+            if out:
+                out.write(gray_frame)
+
+            # Add instruction overlay (optional, but nice)
+            display_frame = gray_frame.copy()
+            cv2.putText(display_frame, "Press 's' to Save, 'q' to Quit", (10, 30), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255), 2)
+
+            # Display the resulting frame
+            cv2.imshow("GrayVedio - Grayscale Stream", display_frame)
+
+            key = cv2.waitKey(1) & 0xFF
+            
+            if key == ord('q'):
+                break
+            
+            if key == ord('s'):
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"capture_{timestamp}.png"
+                cv2.imwrite(filename, gray_frame)
+                print(f"[*] Frame saved: {filename}")
+
+    except KeyboardInterrupt:
+        print("\nInterrupted by user.")
+    finally:
+        # Release everything when done
+        cap.release()
+        if out:
+            out.release()
+        cv2.destroyAllWindows()
+        print("Done. Resources released.")
+
+if __name__ == "__main__":
+    main()
