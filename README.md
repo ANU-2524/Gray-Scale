@@ -1,16 +1,17 @@
-# GrayVedio
+# GrayVideo Enhanced
 
-A simple real-time grayscale video processing tool using OpenCV.
+A sophisticated real-time video processing tool using OpenCV.
 
 ## Features
-- Real-time webcam feed in grayscale.
-- Capture and save frames as images with timestamped filenames.
-- Record the grayscale stream to a video file.
-- Command-line interface for easy configuration.
+- **Real-time Filters**: Switch between Grayscale, Sepia, Sketch, Invert, and Normal modes on the fly.
+- **Dynamic Recording**: Record the video stream even while switching filters.
+- **Frame Capture**: Save individual processed frames with a single keystroke.
+- **Source Flexibility**: Use your webcam or process existing video files.
+- **Performance Monitoring**: Real-time FPS display.
 
 ## Requirements
 - Python 3.x
-- OpenCV (`opencv-python`)
+- Dependencies (OpenCV, NumPy)
 
 Install dependencies:
 ```bash
@@ -18,24 +19,29 @@ pip install -r requirements.txt
 ```
 
 ## Usage
-Run the script with default settings:
+Run the script:
 ```bash
-python grayyyVedioo.py
+python video_processor.py
 ```
 
 ### Options
-- `--camera`: Specify the camera index (default is 0).
-- `--output`: Path to save the recorded grayscale video (e.g., `output.avi`).
+- `--source`: Camera index (e.g., `0`) or path to a video file (e.g., `input_video.mp4`). Default is `0`.
+- `--output`: Path to save the recorded video (e.g., `output.avi`).
 
-Example - Record to a file:
+Example - Process a video file and record:
 ```bash
-python grayyyVedioo.py --output output.avi
+python video_processor.py --source input.mp4 --output processed.avi
 ```
 
 ### Controls
-While the application is running, focus on the video window:
-- Press **'s'** to save the current frame as a `.png` file.
-- Press **'q'** to quit the application.
+While the application is running, use these keys:
+- **'q'**: Quit application.
+- **'s'**: Save current frame as `.png`.
+- **'g'**: Grayscale mode.
+- **'e'**: Sepia mode.
+- **'k'**: Sketch mode.
+- **'i'**: Invert mode.
+- **'n'**: Normal (original) mode.
 
 ## License
 MIT
