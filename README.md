@@ -1,17 +1,25 @@
-# GrayVideo Enhanced
+# GrayVideo Enhanced Pro
 
-A sophisticated real-time video processing tool using OpenCV.
+A highly sophisticated real-time video processing tool using OpenCV with advanced filters, recording capabilities, and manual image adjustments.
 
 ## Features
-- **Real-time Filters**: Switch between Grayscale, Sepia, Sketch, Invert, and Normal modes on the fly.
-- **Dynamic Recording**: Record the video stream even while switching filters.
-- **Frame Capture**: Save individual processed frames with a single keystroke.
-- **Source Flexibility**: Use your webcam or process existing video files.
-- **Performance Monitoring**: Real-time FPS display.
+- **Real-time Filters**: Toggle between multiple professional filters:
+  - **Grayscale**: Classic black and white.
+  - **Sepia**: Vintage warm tone.
+  - **Sketch**: Hand-drawn pencil effect.
+  - **Invert**: Negative color mode.
+  - **Blur**: Gaussian blur for privacy or aesthetics.
+  - **Canny**: High-contrast edge detection.
+  - **Cartoon**: Stylized cartoonish rendering.
+- **Manual Adjustments**: Dynamic Control over **Brightness** and **Contrast** in real-time.
+- **Dynamic Recording**: Record the video stream with all filters and adjustments applied.
+- **Auto-Snapshots**: Save individual processed frames to a dedicated `snapshots/` folder.
+- **Source Flexibility**: Supports webcams, professional cameras, and video files.
+- **Pro HUD**: Modern overlay with FPS monitoring, active filter status, adjustment levels, and a blinking recording indicator.
 
 ## Requirements
 - Python 3.x
-- Dependencies (OpenCV, NumPy)
+- Dependencies: `opencv-python`, `numpy`
 
 Install dependencies:
 ```bash
@@ -25,23 +33,25 @@ python video_processor.py
 ```
 
 ### Options
-- `--source`: Camera index (e.g., `0`) or path to a video file (e.g., `input_video.mp4`). Default is `0`.
-- `--output`: Path to save the recorded video (e.g., `output.avi`).
+- `--source`: Camera index (e.g., `0`) or path to a video file (e.g., `input.mp4`).
+- `--output`: Path to save the recorded video (e.g., `session_output.avi`).
 
-Example - Process a video file and record:
-```bash
-python video_processor.py --source input.mp4 --output processed.avi
-```
-
-### Controls
-While the application is running, use these keys:
-- **'q'**: Quit application.
-- **'s'**: Save current frame as `.png`.
-- **'g'**: Grayscale mode.
-- **'e'**: Sepia mode.
-- **'k'**: Sketch mode.
-- **'i'**: Invert mode.
-- **'n'**: Normal (original) mode.
+### Comprehensive Controls
+| Key | Action |
+|-----|--------|
+| **'q'** | Quit Application |
+| **'s'** | Save Frame (Snapshot) |
+| **'r'** | Reset All Filters & Adjustments |
+| **'n'** | Toggle Normal Mode (No Filter) |
+| **'g'** | Grayscale Filter |
+| **'e'** | Sepia Filter |
+| **'k'** | Sketch Filter |
+| **'i'** | Invert Filter |
+| **'b'** | Blur Filter |
+| **'c'** | Canny Edge Filter |
+| **'o'** | Cartoon Filter |
+| **'[' / ']'** | Decrease / Increase Brightness |
+| **'-' / '='** | Decrease / Increase Contrast |
 
 ## License
 MIT
