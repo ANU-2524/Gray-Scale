@@ -7,7 +7,8 @@ import os
 import time
 import numpy as np
 import logging
-from typing import Optional, Tuple
+import json
+from typing import Optional, Tuple, Dict, Any
 from pathlib import Path
 
 # Configure logging
@@ -52,18 +53,27 @@ RECORDING_INDICATOR_Y = 25
 
 class VideoProcessor:
     """Real-time video processor with professional filters and live adjustments."""
-    def __init__(self, source: int | str = DEFAULT_SOURCE, output_path: Optional[str] = None) -> None:
+    def __init__(self, source: int | str = DEFAULT_SOURCE, output_path: Optional[str] = None,
+                 target_fps: Optional[int] = None, resize_scale: float = 1.0) -> None:
         """Initialize VideoProcessor with source and optional output path.
 
         Args:
             source: Camera index (int) or path to video file (str). Defaults to 0 (webcam).
             output_path: Path to save recorded video. If None, no recording.
+            target_fps: Target FPS for limiting frame rate. If None, no limit.
+            resize_scale: Scale factor for frame resizing (0.5 = half size, 2.0 = double). Default: 1.0.
 
         Raises:
             RuntimeError: If video source cannot be opened.
+            ValueError: If resize_scale is invalid.
         """
+        if resize_scale <= 0 or resize_scale > 3.0:
+            raise ValueError("resize_scale must be between 0 (exclusive) and 3.0")
+
         self.source = source
         self.output_path = output_path
+        self.target_fps = target_fps
+        self.resize_scale = resize_scale
         self.cap = cv2.VideoCapture(source)
         self.out = None
         self.filter_mode = DEFAULT_FILTER
@@ -74,20 +84,31 @@ class VideoProcessor:
         self.status_msg = ""
         self.status_timer = 0
         self.flash_frames = 0
+        self.frame_delay = 1.0 / target_fps if target_fps else 0
 
         # Create snapshots directory if it doesn't exist
         Path(self.snapshot_dir).mkdir(exist_ok=True)
 
         if not self.cap.isOpened():
-            logger.error(f"Could not open video source: {source}")
-            raise RuntimeError(f"Could not open video source: {source}")
+            source_desc = f"camera {source}" if isinstance(source, int) else f"file '{source}'"
+            logger.error(f"Could not open video source: {source_desc}")
+            raise RuntimeError(f"Could not open video source: {source_desc}. "
+                             "Please verify the camera is connected or the file path is correct.")
 
         # Get video properties
         self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.fps = self.cap.get(cv2.CAP_PROP_FPS) or 20.0
 
+        # Apply resize scale
+        if resize_scale != 1.0:
+            self.width = int(self.width * resize_scale)
+            self.height = int(self.height * resize_scale)
+            logger.info(f"Frame resizing enabled: {resize_scale}x -> {self.width}x{self.height}")
+
         logger.info(f"Video source initialized: {self.width}x{self.height} @ {self.fps:.1f} FPS")
+        if target_fps:
+            logger.info(f"Frame rate limited to {target_fps} FPS")
 
         if self.output_path:
             self._setup_writer()
@@ -96,13 +117,25 @@ class VideoProcessor:
         """Initialize video writer for recording processed frames.
 
         Saves in color format to allow filter switching during recording.
+
+        Raises:
+            IOError: If output directory doesn't exist or can't be created.
         """
+        # Ensure output directory exists
+        output_dir = os.path.dirname(os.path.abspath(self.output_path))
+        if output_dir and not os.path.exists(output_dir):
+            try:
+                os.makedirs(output_dir, exist_ok=True)
+            except OSError as e:
+                logger.error(f"Could not create output directory: {output_dir}")
+                raise IOError(f"Cannot create output directory: {output_dir}") from e
+
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
         self.out = cv2.VideoWriter(self.output_path, fourcc, self.fps, (self.width, self.height))
         if not self.out.isOpened():
             logger.error(f"Failed to create video writer for: {self.output_path}")
             self.out = None
-            return
+            raise IOError(f"Failed to create video writer. Check if the path is valid and you have write permissions.")
         self.is_recording = True
         logger.info(f"Recording started: {self.output_path}")
 
@@ -113,9 +146,13 @@ class VideoProcessor:
             frame: Input frame array.
 
         Returns:
-            Adjusted frame with brightness and contrast applied.
+            Adjusted frame with brightness and contrast applied, properly clipped to valid range.
         """
-        return cv2.convertScaleAbs(frame, alpha=self.contrast, beta=self.brightness)
+        # Apply contrast (alpha) and brightness (beta)
+        adjusted = cv2.convertScaleAbs(frame, alpha=self.contrast, beta=self.brightness)
+        # Ensure values stay within valid uint8 range
+        adjusted = np.clip(adjusted, 0, 255).astype(np.uint8)
+        return adjusted
 
     def apply_filter(self, frame: np.ndarray) -> np.ndarray:
         """Apply selected filter to frame.
@@ -192,23 +229,36 @@ class VideoProcessor:
 
         prev_time = 0
         frame_count = 0
+        last_frame_time = time.time()
 
         try:
             while True:
+                # Frame rate limiting
+                if self.target_fps:
+                    elapsed = time.time() - last_frame_time
+                    if elapsed < self.frame_delay:
+                        time.sleep(self.frame_delay - elapsed)
+
                 ret, frame = self.cap.read()
                 if not ret:
                     if isinstance(self.source, str):
-                        print("End of video file reached.")
+                        logger.info("End of video file reached.")
                     else:
-                        print("Error: Failed to read frame from camera.")
+                        logger.error("Failed to read frame from camera.")
                     break
 
+                last_frame_time = time.time()
                 frame_count += 1
+
+                # Apply resize if needed
+                if self.resize_scale != 1.0:
+                    frame = cv2.resize(frame, (self.width, self.height), interpolation=cv2.INTER_LINEAR)
+
                 # Process frame
                 processed_frame = self.apply_filter(frame)
 
                 # Write to output if recording
-                if self.out:
+                if self.out and self.out.isOpened():
                     self.out.write(processed_frame)
 
                 # UI Overlay
@@ -256,30 +306,56 @@ class VideoProcessor:
                     self.save_frame(processed_frame)
                 elif key == ord('g'):
                     self.filter_mode = 'grayscale'
+                    self.status_msg = "Grayscale filter"
+                    self.status_timer = STATUS_MSG_DURATION
                 elif key == ord('e'):
                     self.filter_mode = 'sepia'
+                    self.status_msg = "Sepia filter"
+                    self.status_timer = STATUS_MSG_DURATION
                 elif key == ord('k'):
                     self.filter_mode = 'sketch'
+                    self.status_msg = "Sketch filter"
+                    self.status_timer = STATUS_MSG_DURATION
                 elif key == ord('i'):
                     self.filter_mode = 'invert'
+                    self.status_msg = "Invert filter"
+                    self.status_timer = STATUS_MSG_DURATION
                 elif key == ord('b'):
                     self.filter_mode = 'blur'
+                    self.status_msg = "Blur filter"
+                    self.status_timer = STATUS_MSG_DURATION
                 elif key == ord('c'):
                     self.filter_mode = 'canny'
+                    self.status_msg = "Canny edge detection"
+                    self.status_timer = STATUS_MSG_DURATION
                 elif key == ord('o'):
                     self.filter_mode = 'cartoon'
+                    self.status_msg = "Cartoon filter"
+                    self.status_timer = STATUS_MSG_DURATION
                 elif key == ord('n'):
                     self.filter_mode = 'none'
+                    self.status_msg = "Normal (no filter)"
+                    self.status_timer = STATUS_MSG_DURATION
                 elif key == ord('['):
                     self.brightness = max(BRIGHTNESS_MIN, self.brightness - BRIGHTNESS_STEP)
+                    self.status_msg = f"Brightness: {self.brightness}"
+                    self.status_timer = STATUS_MSG_DURATION
                 elif key == ord(']'):
                     self.brightness = min(BRIGHTNESS_MAX, self.brightness + BRIGHTNESS_STEP)
+                    self.status_msg = f"Brightness: {self.brightness}"
+                    self.status_timer = STATUS_MSG_DURATION
                 elif key == ord('-'):
                     self.contrast = max(CONTRAST_MIN, self.contrast - CONTRAST_STEP)
+                    self.status_msg = f"Contrast: {self.contrast:.1f}"
+                    self.status_timer = STATUS_MSG_DURATION
                 elif key == ord('='):
                     self.contrast = min(CONTRAST_MAX, self.contrast + CONTRAST_STEP)
+                    self.status_msg = f"Contrast: {self.contrast:.1f}"
+                    self.status_timer = STATUS_MSG_DURATION
                 elif key == ord('r'):
                     self.reset_settings()
+                elif key == ord('h'):
+                    self._print_controls()
 
         except KeyboardInterrupt:
             logger.info("Interrupted by user")
@@ -319,5 +395,69 @@ class VideoProcessor:
         cv2.destroyAllWindows()
         logger.info("Resources released. Goodbye!")
 
-def main() -> None:\n    \"\"\"Main entry point for GrayVideo application.\"\"\"\n    parser = argparse.ArgumentParser(\n        description=\"GrayVideo Enhanced: Professional real-time video processing with filters\",\n        formatter_class=argparse.RawDescriptionHelpFormatter,\n        epilog=\"Examples:\\n\"\n               \"  python video_processor.py                    # Use webcam (camera 0)\\n\"\n               \"  python video_processor.py --source 1          # Use camera 1\\n\"\n               \"  python video_processor.py --source video.mp4  # Process video file\\n\"\n               \"  python video_processor.py --output output.avi # Record output\"\n    )\n    parser.add_argument(\n        \"--source\", type=str, default=\"0\",\n        help=\"Camera index (0, 1, etc.) or path to video file. Default: 0 (webcam)\"\n    )\n    parser.add_argument(\n        \"--output\", type=str,\n        help=\"Path to save processed video (e.g., output.avi)\"\n    )\n    \n    args = parser.parse_args()\n\n    # Determine if source is camera index or file path\n    source = args.source\n    if source.isdigit():\n        source = int(source)\n    elif not os.path.exists(source):\n        logger.error(f\"Video file '{source}' not found.\")\n        return\n\n    try:\n        processor = VideoProcessor(source=source, output_path=args.output)\n        processor.run()\n    except RuntimeError as e:\n        logger.error(f\"Error: {e}\")\n    except Exception as e:\n        logger.error(f\"Unexpected error: {e}\", exc_info=True)\n\n\nif __name__ == \"__main__\":\n    main()
+def main() -> None:
+    """Main entry point for GrayVideo application."""
+    parser = argparse.ArgumentParser(
+        description="GrayVideo Enhanced: Professional real-time video processing with filters",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Examples:\n"
+               "  python video_processor.py                                    # Use webcam (camera 0)\n"
+               "  python video_processor.py --source 1                         # Use camera 1\n"
+               "  python video_processor.py --source video.mp4                 # Process video file\n"
+               "  python video_processor.py --output output.avi                # Record output\n"
+               "  python video_processor.py --fps 30 --scale 0.75              # Limit FPS and resize"
+    )
+    parser.add_argument(
+        "--source", type=str, default="0",
+        help="Camera index (0, 1, etc.) or path to video file. Default: 0 (webcam)"
+    )
+    parser.add_argument(
+        "--output", type=str,
+        help="Path to save processed video (e.g., output.avi)"
+    )
+    parser.add_argument(
+        "--fps", type=int, default=None,
+        help="Target FPS for frame rate limiting (e.g., 30). Default: unlimited"
+    )
+    parser.add_argument(
+        "--scale", type=float, default=1.0,
+        help="Frame resize scale factor (0.25-3.0). Default: 1.0 (no resize). "
+             "Use 0.5 for half-size, 2.0 for double-size, etc."
+    )
+
+    args = parser.parse_args()
+
+    # Determine if source is camera index or file path
+    source = args.source
+    if source.isdigit():
+        source = int(source)
+    elif not os.path.exists(source):
+        logger.error(f"Video file '{source}' not found.")
+        return
+
+    # Validate FPS
+    if args.fps is not None and args.fps <= 0:
+        logger.error("FPS must be a positive number.")
+        return
+
+    # Validate and prepare output path
+    output_path = args.output
+    if output_path:
+        # Ensure output has proper extension
+        if not output_path.lower().endswith(('.avi', '.mp4')):
+            output_path += '.avi'
+            logger.warning(f"No file extension provided. Using: {output_path}")
+
+    try:
+        processor = VideoProcessor(
+            source=source,
+            output_path=output_path,
+            target_fps=args.fps,
+            resize_scale=args.scale
+        )
+        processor.run()
+    except (RuntimeError, ValueError, IOError) as e:
+        logger.error(f"Error: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}", exc_info=True)\n\n\nif __name__ == \"__main__\":\n    main()
 

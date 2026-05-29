@@ -1,0 +1,74 @@
+# Development Requirements
+
+These are optional dependencies for developers who want to contribute to GrayVideo Enhanced.
+Use these if you're planning to improve the code or add new features.
+
+## Code Quality Tools
+
+# Linting and Code Analysis
+pylint>=3.0
+flake8>=6.0
+black>=23.0
+isort>=5.12
+
+# Type Checking
+mypy>=1.0
+
+# Testing
+pytest>=7.0
+pytest-cov>=4.0
+
+## Development Tools
+
+# Documentation generation (optional)
+sphinx>=6.0
+sphinx-rtd-theme>=1.2
+
+# Git hooks for code quality checks (optional)
+pre-commit>=3.0
+
+## Usage
+
+### Install Development Requirements
+```bash
+pip install -r requirements-dev.txt
+```
+
+### Run Linting
+```bash
+# Check for style issues
+flake8 video_processor.py
+
+# Fix formatting
+black video_processor.py
+
+# Sort imports
+isort video_processor.py
+
+# Detailed linting
+pylint video_processor.py
+```
+
+### Type Checking
+```bash
+mypy video_processor.py --ignore-missing-imports
+```
+
+### Run Tests
+```bash
+pytest
+```
+
+### Generate Coverage Report
+```bash
+pytest --cov=. --cov-report=html
+```
+
+## Pre-commit Setup (Optional)
+
+To automatically run checks before committing:
+
+1. Install pre-commit: `pip install pre-commit`
+2. Create `.pre-commit-config.yaml` in the project root
+3. Run: `pre-commit install`
+4. On next commit, checks will run automatically

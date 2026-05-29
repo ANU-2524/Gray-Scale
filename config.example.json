@@ -1,0 +1,49 @@
+{
+  "description": "GrayVideo Enhanced Configuration Example - Copy this to config.json to use custom settings",
+  "general": {
+    "source": 0,
+    "output_path": null,
+    "target_fps": null,
+    "resize_scale": 1.0
+  },
+  "filters": {
+    "default_filter": "none",
+    "brightness": 0,
+    "contrast": 1.0
+  },
+  "performance": {
+    "enable_fps_limiting": false,
+    "target_fps": 30,
+    "frame_resize_enabled": false,
+    "frame_resize_scale": 0.75
+  },
+  "ui": {
+    "hud_enabled": true,
+    "show_fps": true,
+    "show_filter_name": true,
+    "recording_indicator": true
+  },
+  "presets": {
+    "webcam_quick": {
+      "source": 0,
+      "target_fps": 30,
+      "resize_scale": 1.0
+    },
+    "low_end_hardware": {
+      "source": 0,
+      "target_fps": 15,
+      "resize_scale": 0.5
+    },
+    "hd_recording": {
+      "source": 0,
+      "output_path": "hd_recording.avi",
+      "target_fps": 30,
+      "resize_scale": 1.0
+    },
+    "fast_processing": {
+      "source": 0,
+      "target_fps": 60,
+      "resize_scale": 0.75
+    }
+  }
+}

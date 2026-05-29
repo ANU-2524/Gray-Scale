@@ -2,7 +2,7 @@
 
 A professional-grade real-time video processing application built with Python and OpenCV. Process live video streams from webcams, professional cameras, or video files with advanced filters, brightness/contrast adjustments, and recording capabilities.
 
-![Version](https://img.shields.io/badge/version-2.0-blue)
+![Version](https://img.shields.io/badge/version-2.1-blue)
 ![Python](https://img.shields.io/badge/python-3.7+-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -13,14 +13,21 @@ A professional-grade real-time video processing application built with Python an
 - **📹 Dynamic Recording**: Record processed video with all filters and adjustments applied
 - **📸 Auto-Snapshots**: Save individual frames to a dedicated `snapshots/` folder
 - **📱 Source Flexibility**: Support for webcams, professional cameras, and video files
+- **⚡ Performance Optimization**: Frame resizing and FPS limiting for smooth processing on any hardware
 - **🎯 Pro HUD**: Modern overlay with FPS monitoring, filter status, adjustment levels, and recording indicator
-- **⚡ Optimized Performance**: Smooth, real-time processing with efficient resource usage
-- **🔒 Clean Code**: Type hints, comprehensive docstrings, and logging throughout
+- **🔒 Clean Code**: Type hints, comprehensive docstrings, and detailed logging throughout
 
-## Requirements
+## System Requirements
 
-- Python 3.7 or higher
-- Dependencies: `opencv-python>=4.5.0`, `numpy>=1.19.0`
+- **Python**: 3.7 or higher
+- **OS**: Windows, macOS, or Linux
+- **Camera**: USB webcam or integrated camera (or video file)
+- **Disk Space**: 500MB for dependencies, additional space for video recording
+
+## Dependencies
+
+- `opencv-python>=4.5.0` - Video processing and computer vision
+- `numpy>=1.19.0` - Numerical computing library
 
 ## Installation
 
@@ -29,7 +36,16 @@ A professional-grade real-time video processing application built with Python an
 cd GrayVedio
 ```
 
-### Step 2: Install Dependencies
+### Step 2: Create Virtual Environment (Recommended)
+```bash
+python -m venv venv
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+```
+
+### Step 3: Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
@@ -58,9 +74,20 @@ python video_processor.py --source input.mp4 --output output.avi
 python video_processor.py --output my_recording.avi
 ```
 
-### Complete Example
+### Limiting Frame Rate (for low-end hardware)
 ```bash
-python video_processor.py --source video.mp4 --output processed_output.avi
+python video_processor.py --fps 30
+```
+
+### Resizing Frames for Performance
+```bash
+python video_processor.py --scale 0.5    # Half resolution
+python video_processor.py --scale 2.0    # Double resolution
+```
+
+### Complete Example with All Options
+```bash
+python video_processor.py --source video.mp4 --output processed.avi --fps 30 --scale 0.75
 ```
 
 ## Keyboard Controls
@@ -70,6 +97,7 @@ python video_processor.py --source video.mp4 --output processed_output.avi
 |-----|--------|
 | **q** | Exit application |
 | **r** | Reset all settings to defaults |
+| **h** | Display this help text |
 
 ### Filters
 | Key | Filter |
@@ -98,6 +126,45 @@ python video_processor.py --source video.mp4 --output processed_output.avi
 
 ### Camera Not Detected
 - Ensure your camera is connected and not in use by another application
+- Try specifying a different camera index: `python video_processor.py --source 1`
+- On some systems, you may need to grant camera permissions to the terminal
+
+### Video File Playback Error
+- Verify the file path is correct and the file exists
+- Check that the file format is supported by OpenCV (MP4, AVI, MOV, etc.)
+- Ensure the file is not corrupted or currently open in another application
+
+### Recording Fails
+- Ensure the output directory exists and you have write permissions
+- Check available disk space (video files can be large)
+- Try using a different output format (e.g., `.avi` instead of `.mp4`)
+
+### Performance Issues (Low FPS)
+- Use frame resizing: `--scale 0.5` for half resolution
+- Limit frame rate: `--fps 30`
+- Close other applications consuming CPU/GPU resources
+- Check camera driver is up-to-date
+
+### Black/Empty Window
+- Wait a moment for the camera to initialize
+- Try a different camera index
+- On Linux, you may need to install: `sudo apt-get install libsm6 libxext6`
+
+## Command Line Arguments
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `--source` | str | Camera index (0, 1, etc.) or video file path. Default: 0 |
+| `--output` | str | Path to save processed video. Default: None (no recording) |
+| `--fps` | int | Target frame rate in Hz. Default: None (unlimited) |
+| `--scale` | float | Frame resize factor (0.25-3.0). Default: 1.0 (no resize) |
+
+## Performance Tips
+
+1. **For Low-End Hardware**: Use `--scale 0.5 --fps 15` for smooth operation
+2. **For High-Quality Recording**: Use `--fps 30 --scale 1.0` for standard quality
+3. **For Real-Time Processing**: Leave `--fps` unlimited and adjust `--scale` as needed
+4. **File Format**: AVI format (`--output file.avi`) is faster than MP4 but larger file size
 - Try specifying a different camera index: `python video_processor.py --source 1`
 - On Windows, check Device Manager for camera conflicts
 
